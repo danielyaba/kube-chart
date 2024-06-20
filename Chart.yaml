@@ -1,0 +1,5 @@
+apiVersion: v2
+name: kube-chart
+description: A Helm library chart for reusable Kubernetes templates
+type: library
+version: 0.1.0

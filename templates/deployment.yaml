@@ -1,0 +1,103 @@
+{{- define "kube-chart.deployment" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.name }}
+  labels:
+    {{- include "kube-chart.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- end }}
+      initContainers:
+        {{- range .Values.initContainers }}
+        - name: {{ .name }}
+          image: {{ .image }}
+          {{- if .command }}
+          command: 
+            {{- toYaml .command | nindent 12 }}
+          {{- end }}
+          {{- if .args }}
+          args: 
+            {{- toYaml .args | nindent 12 }}
+          {{- end }}
+          {{- if .env }}
+          env:
+            {{- range .env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if .envFrom }}
+          envFrom:
+            {{- range .envFrom }}
+            - configMapRef:
+                name: {{ .configMapRef }}
+            - secretRef:
+                name: {{ .secretRef }}
+            {{- end }}
+          {{- end }}
+          {{- if .volumeMounts }}
+          volumeMounts:
+            {{- range .volumeMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+      containers:
+        - name: {{ .Values.name }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          {{- if .Values.env }}
+          env:
+            {{- range .Values.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.envFrom }}
+          envFrom:
+            {{- range .Values.envFrom }}
+            - configMapRef:
+                name: {{ .configMapRef }}
+            - secretRef:
+                name: {{ .secretRef }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.volumeMounts }}
+          volumeMounts:
+            {{- range .Values.volumeMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+            {{- end }}
+          {{- end }}
+      {{- if .Values.volumes }}
+      volumes:
+        {{- range .Values.volumes }}
+        - name: {{ .name }}
+          {{- if .configMap }}
+          configMap:
+            name: {{ .configMap.name }}
+          {{- end }}
+          {{- if .secret }}
+          secret:
+            secretName: {{ .secret.secretName }}
+          {{- end }}
+          {{- if .persistentVolumeClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .persistentVolumeClaim.claimName }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+{{- end -}}
